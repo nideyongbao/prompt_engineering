@@ -1,0 +1,49 @@
+{
+    "mcpServers": {
+        "tavily": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "tavily-mcp"
+            ],
+            "env": {
+                "TAVILY_API_KEY": "x"
+            }
+        },
+        "rednote-MCP": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "rednote-mcp",
+                "--stdio"
+            ]
+        },
+        "fabric-mcp-server": {
+            "command": "node",
+            "args": [
+                "E:\\code\\workspace\\1225\\fabric-mcp-server\\build\\index.js"
+            ],
+            "env": {},
+            "transportType": "stdio",
+            "timeout": 60
+        },
+        "github": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-github"
+            ],
+            "env": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+            }
+        },
+        "puppeteer": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-puppeteer"
+            ],
+            "env": {}
+        }
+    }
+}
