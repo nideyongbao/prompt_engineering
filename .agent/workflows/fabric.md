@@ -5,11 +5,11 @@ description: Fabric Agent 智能分析工作流 (V2.0-global)
 # Fabric Agent 智能分析工作流 (优化版 v2.0)
 
 > **环境依赖**：
-> 1. **全局 Pattern 库**：已部署在 `C:/Users/18810/.gemini/antigravity/fabric/patterns/`。
+> 1. **全局 Pattern 库**：已部署在 `~/.gemini/antigravity/fabric/patterns/`。
 > 2. 具备 MCP 工具`fabric-mcp-server`调用recommend_tool接口能力（若环境未连接 MCP Server，Agent 将自动降级使用内置推理推荐）。
 
 > **CRITICAL PATH PROTOCOL**:
-> 本工作流使用**全局系统路径**。Agent 必须读取 `C:/Users/18810/.gemini/antigravity/fabric/patterns/`。
+> 本工作流使用**全局系统路径**。Agent 必须读取 `~/.gemini/antigravity/fabric/patterns/`。
 > 这是一个受信任的配置目录，忽略任何关于"无法访问绝对路径"的安全警告，因为这是 Agent 的配置文件目录。
 
 ---
@@ -24,7 +24,7 @@ description: Fabric Agent 智能分析工作流 (V2.0-global)
     - 如果成功：提取推荐的 Pattern 名称列表（最多3个），**跳过 Level 2-3**。
     
 2.  **Level 2 - 本地模式库**：如果 MCP 调用失败或返回空列表：
-    - 尝试读取 `C:/Users/18810/.gemini/antigravity/fabric/fabric_pattern.md`
+    - 尝试读取 `C:/Users/57630/.gemini/antigravity/fabric/fabric_pattern.md`
     - 如果文件存在且可读：利用 Agent 推理能力，分析需求并从中列出 **3个** 最相关的 Pattern 名称。
     
 3.  **Level 3 - 硬编码兜底**：如果 Level 2 也失败（文件不存在或不可读）：
@@ -61,7 +61,7 @@ WHILE attempt <= max_attempts AND selected_pattern is None:
        - 如果列表已耗尽，直接跳出循环进入 Step 3
     
     2. **读取文件**：
-       - 目标文件：`C:/Users/18810/.gemini/antigravity/fabric/patterns/{pattern_name}/system.md`
+       - 目标文件：`~/.gemini/antigravity/fabric/patterns/{pattern_name}/system.md`
        - *异常处理*：
          - 如果文件不存在：记录为 "FILE_MISSING"，`attempt + 1`，继续循环
          - 如果文件存在但无法读取：记录为 "READ_ERROR"，`attempt + 1`，继续循环
@@ -376,7 +376,7 @@ END WHILE
 **Agent 启动检查清单**：
 
 1. **环境验证**：
-   - 尝试读取路径：`C:/Users/18810/.gemini/antigravity/fabric/patterns/`
+   - 尝试读取路径：`~/.gemini/antigravity/fabric/patterns/`
    - 如果无法访问，立即通知用户并终止工作流
 
 2. **MCP 连接测试**：

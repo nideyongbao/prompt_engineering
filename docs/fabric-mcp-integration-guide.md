@@ -32,6 +32,8 @@
 
 通过 MCP (Model Context Protocol) 集成，可以：
 
+
+
 | 特性 | 说明 |
 |------|------|
 | **工具化调用** | 像调用其他 MCP 工具一样使用 Fabric Patterns |

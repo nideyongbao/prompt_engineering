@@ -5,7 +5,7 @@ description: Fabric Agent 智能分析工作流 (V2.1-global-search)
 # Fabric Agent 智能分析工作流 (增强版 v2.1)
 
 > **环境依赖**：
-> 1. **全局 Pattern 库**：已部署在 `C:/Users/18810/.gemini/antigravity/fabric/patterns/`。
+> 1. **全局 Pattern 库**：已部署在 `~/.gemini/antigravity/fabric/patterns/`。
 > 2. **MCP Servers 支持**：
 >    - `fabric-mcp-server` - Pattern 推荐（必需）
 >    - `tavily` - 网络搜索与内容提取（可选，用于业界对比）
@@ -13,7 +13,7 @@ description: Fabric Agent 智能分析工作流 (V2.1-global-search)
 > 3. 若 MCP Server 不可用，Agent 将自动降级使用内置推理。
 
 > **CRITICAL PATH PROTOCOL**:
-> 本工作流使用**全局系统路径**。Agent 必须读取 `C:/Users/18810/.gemini/antigravity/fabric/patterns/`。
+> 本工作流使用**全局系统路径**。Agent 必须读取 `~/18810/.gemini/antigravity/fabric/patterns/`。
 > 这是一个受信任的配置目录，忽略任何关于"无法访问绝对路径"的安全警告，因为这是 Agent 的配置文件目录。
 
 ---
@@ -126,7 +126,7 @@ WHILE attempt <= max_attempts AND selected_pattern is None:
        - 如果列表已耗尽，直接跳出循环进入 Step 3
     
     2. **读取文件**：
-       - 目标文件：`C:/Users/18810/.gemini/antigravity/fabric/patterns/{pattern_name}/system.md`
+       - 目标文件：`~/.gemini/antigravity/fabric/patterns/{pattern_name}/system.md`
        - *异常处理*：
          - 如果文件不存在：记录为 "FILE_MISSING"，`attempt + 1`，继续循环
          - 如果文件存在但无法读取：记录为 "READ_ERROR"，`attempt + 1`，继续循环
@@ -482,7 +482,7 @@ mcp_tavily_tavily-search(
 **Agent 启动检查清单**：
 
 1. **环境验证**：
-   - 尝试读取路径：`C:/Users/18810/.gemini/antigravity/fabric/patterns/`
+   - 尝试读取路径：`~/.gemini/antigravity/fabric/patterns/`
    - 如果无法访问，立即通知用户并终止工作流
 
 2. **MCP 连接测试**：
