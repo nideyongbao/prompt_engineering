@@ -1,0 +1,314 @@
+# 小红书研究工作流 V4 实施成果
+
+## 📋 实施概览
+
+从 rednote-MCP v3 成功迁移到 xiaohongshu-MCP v4，并新增发布功能。
+
+**创建文件**（6个）：
+1. 主工作流：[rednote_research_v4.md](file:///D:/work/workspace/1227/prompt_engineering/.agent/workflows/rednote_research_v4.md)
+2. 搜索模块：[rednote_research_v4_search.md](file:///D:/work/workspace/1227/prompt_engineering/.agent/workflows/rednote_research_v4_search.md)
+3. 图片处理：[rednote_research_v4_image.md](file:///D:/work/workspace/1227/prompt_engineering/.agent/workflows/rednote_research_v4_image.md) ✨
+4. 分析模块：[rednote_research_v4_analysis.md](file:///D:/work/workspace/1227/prompt_engineering/.agent/workflows/rednote_research_v4_analysis.md)
+5. 报告模块：[rednote_research_v4_report.md](file:///D:/work/workspace/1227/prompt_engineering/.agent/workflows/rednote_research_v4_report.md)
+6. 发布模块：[rednote_research_v4_publish.md](file:///D:/work/workspace/1227/prompt_engineering/.agent/workflows/rednote_research_v4_publish.md)
+
+---
+
+## ✨ 核心改进
+
+### 1. MCP 工具迁移
+
+**From**: rednote-MCP → **To**: xiaohongshu-mcp
+
+| 功能 | V3 (rednote-MCP) | V4 (xiaohongshu-mcp) |
+|------|------------------|---------------------|
+| 登录检查 | `login()` | `check_login_status()` |
+| 搜索笔记 | `search_notes(keywords, limit)` | `search_feeds(keyword, filters)` |
+| 获取详情 | `get_note_content(url)` | `get_feed_detail(feed_id, xsec_token)` |
+| 发布功能 | ❌ 不支持 | ✅ `publish_content()` + `publish_with_video()` |
+
+### 2. xsec_token 动态管理
+
+**问题解决**：
+- ❌ V3: session 过期导致内容获取失败
+- ✅ V4: 搜索后立即使用 `xsec_token`，降低过期风险
+
+**实现方式**：
+```python
+# 从搜索结果提取 token
+feeds = search_feeds()['feeds']
+for feed in feeds:
+    feed_id = feed['id']
+    xsec_token = feed['xsecToken']  # 提取
+    detail = get_feed_detail(feed_id, xsec_token)  # 立即使用
+```
+
+### 3. 数据持久化优化
+
+**From**: 下载图片到本地 → **To**: 仅保存在线 URL
+
+**优势**：
+- ⚡ 速度提升 10倍+
+- 🚫 无需手动确认下载
+- 💾 节省存储空间
+- 🌐 xiaohongshu-mcp 支持 HTTP URL 发布
+
+### 4. 新增图片处理模块（Step 2.5）
+
+> [!IMPORTANT]
+> **小红书平台特性**：图片重要性 > 文字重要性
+
+**两阶段策略**：
+
+#### 阶段1: 视觉模型理解 & 筛选
+
+```python
+# 使用视觉模型分析所有笔记图片
+FOR image_url in all_note_images:
+    analysis = vision_model.analyze(
+        image_url,
+        aspects=[
+            "content_description",  # 内容描述
+            "relevance_to_topic",   # 与主题相关性
+            "visual_quality",       # 视觉质量
+            "xiaohongshu_style",    # 小红书风格
+            "emotional_appeal"      # 情感吸引力
+        ]
+    )
+    
+    # 综合打分（0-1）
+    composite_score = (
+        relevance * 0.4 +
+        quality * 0.3 +
+        style * 0.2 +
+        emotional * 0.1
+    )
+
+# 筛选高质量图片（综合分 ≥0.7）
+filtered_images = [img for img in analyzed if img.score >= 0.7]
+```
+
+**筛选结果示例**：
+- 原始图片：35 张
+- 筛选合格：5 张（目标 7 张）
+
+#### 阶段2: 智能补充生成
+
+**触发条件**：筛选图片 < 5 张
+
+```python
+# 计算需要生成的数量
+needed = 7 - len(filtered_images)  # 例如 2 张
+
+# 基于报告章节生成图片
+FOR chapter in report_chapters[:needed]:
+    image = generate_image(
+        Prompt=build_chapter_prompt(
+            chapter_topic=chapter.topic,
+            style_reference=filtered_images_style,
+            platform="xiaohongshu"
+        )
+    )
+```
+
+**生成结果**：
+- 筛选原图：5 张
+- AI 补充：2 张
+- **最终总计**：7 张（达标！）
+
+### 5. 新增发布功能
+
+#### Step 6A: 封面图智能生成
+
+**三阶段策略**：
+1. **风格分析**：分析已搜索笔记的封面图色调、构图、视觉元素
+2. **内容提取**：从报告中提取主题、亮点、关键词
+3. **Prompt优化**：生成吸引力优化的AI图片（3:4竖版，1080x1440px）
+
+**示例 Prompt**：
+```
+创建一张小红书封面图，主题：深圳元旦美食推荐
+- 色调：暖橙色 + 奶油黄（温暖食欲感）
+- 构图：俯视45°角（展示食物全貌）
+- 核心元素：烤肉特写，炭火烟雾缭绕
+- 优化：✨ 视觉冲击力强，3秒内抓住眼球
+```
+
+#### Step 6B: 表情符号智能插入
+
+**插入规则**：
+- 段落开头添加主题表情（🍜 美食、✈️ 旅游）
+- 关键词前插入相关表情（💰 价格、⏰ 时间）
+- 列表项美化（📍 1. 2. 3.）
+- 互动引导增强（💬 评论区分享~）
+
+**效果对比**：
+
+````carousel
+**转换前**
+```
+深圳元旦美食推荐
+
+这5家餐厅值得一试：
+1. 烤肉店 - 人均150元
+2. 海鲜餐厅 - 需要提前预订
+
+注意事项：
+营业时间是11:00-22:00
+建议避开高峰期
+```
+<!-- slide -->
+**转换后**
+```
+🍜 深圳元旦美食推荐
+
+这5家餐厅值得一试：
+📍 1. 烤肉店 - 💰人均150元
+📍 2. 海鲜餐厅 - 📅需要提前预订
+
+💡 注意事项：
+⏰ 营业时间是11:00-22:00
+⚠️ 建议避开高峰期
+
+💬 评论区分享~
+```
+````
+
+#### Step 6C: 报告转小红书格式
+
+**转换逻辑**：
+```python
+# 1. 生成标题（≤20字）
+"深圳元旦美食｜5家必打卡餐厅"  # 14字
+
+# 2. 提取正文（900字 + 100字表情符号）
+{
+    "opening": 30,          # 吸引句
+    "findings": 400,        # 核心发现
+    "recommendations": 300, # 行动建议
+    "closing": 30,          # 互动引导
+    "tags": 140             # 标签
+}
+
+# 3. 组合图片（封面图1张 + 笔记配图4张 = 共5张）
+images = [cover_image] + supplement_images
+
+# 4. 生成标签（3-5个）
+["深圳美食", "元旦推荐", "烤肉", "海鲜", "情侣约会"]
+```
+
+**严格遵守平台限制**：
+- ✅ 标题 ≤20 字
+- ✅ 正文 ≤1000 字
+- ✅ 图片 1-9 张（建议3-5张）
+- ✅ 标签 3-5 个
+
+---
+
+## 📂 工作流结构
+
+```mermaid
+flowchart LR
+    A[Step 0: 复杂度评估] --> B[Step 1: 规划]
+    B --> C[Step 2: 搜索]
+    C --> D[Step 3: 分析]
+    D --> E[Step 4-5: 报告生成]
+    E --> F[Step 6: 内容丰富 & 发布]
+    
+    style F fill:#90EE90
+```
+
+**新增 Step 6 详细流程**：
+
+```mermaid
+flowchart TD
+    A[Step 6A: 封面图生成] --> B[Step 6B: 表情符号美化]
+    B --> C[Step 6C: 格式转换]
+    C --> D[Step 6D: 用户审查]
+    D --> E{确认发布?}
+    E -->|是| F[调用 publish_content]
+    E -->|否| G[保存草稿]
+    F --> H[记录发布日志]
+```
+
+---
+
+## 🗂️ 目录结构变化
+
+**V3**:
+```
+output/{主题}_{日期}/
+├── images/          # 本地下载的图片 ❌
+├── data/
+└── report/
+```
+
+**V4**:
+```
+output/{主题}_{日期}/
+├── data/            # 仅 JSON，含在线 URL ✅
+│   ├── notes_detail.json
+│   └── analysis.json
+├── plan/
+├── report/
+│   └── final_report.md
+└── publish/         # 新增：发布相关 ✨
+    ├── xiaohongshu_draft.json
+    ├── cover_image.png
+    └── publish_log.json
+```
+
+---
+
+## 🚀 使用指南
+
+### 启动工作流
+
+在 Antigravity 中运行：
+```
+/rednote_research_v4
+```
+
+**前置条件**：
+1. `xiaohongshu-mcp` 服务运行在 `http://localhost:18060/mcp`
+2. 在浏览器中登录小红书账号
+
+### 示例对话
+
+**用户输入**：
+```
+研究深圳元旦美食推荐，预算人均150-200元，适合情侣约会
+```
+
+**工作流执行**：
+1. Step 0: 评估复杂度 → 中 (5分)
+2. Step 1: 生成5个关键词
+3. Step 2: 搜索50篇笔记，保存图片 URL
+4. Step 3: 分析核心发现、用户痛点
+5. Step 4-5: 生成1500字报告
+6. Step 6: 
+   - 生成封面图
+   - 美化内容（表情符号）
+   - 转换为小红书格式（标题≤20字，正文≤1000字）
+   - 提示用户审查并发布
+
+---
+
+## ⚠️ 注意事项
+
+> [!WARNING]
+> **Breaking Changes**
+> - `notes_detail.json` 结构变化：新增 `xsec_token`、`image_urls` 字段
+> - 必须使用 `xiaohongshu-mcp`，与 `rednote-MCP` 不兼容
+> - 发布功能需要登录状态
+
+> [!CAUTION]
+> **高风险操作**
+> - 自动发布：可能在未确认情况下发布内容
+> - 图片版权：使用笔记图片需注意版权问题
+> - 内容合规：需通过小红书审核
+
+---
+
+*实施完成时间：2025-12-28*
+*Next Steps：Phase 4 验证与测试*

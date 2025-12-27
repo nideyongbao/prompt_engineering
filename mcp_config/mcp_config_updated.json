@@ -44,6 +44,9 @@
                 "@modelcontextprotocol/server-puppeteer"
             ],
             "env": {}
+        },
+        "xiaohongshu-mcp": {
+            "serverUrl": "http://localhost:18060/mcp"
         }
     }
 }
